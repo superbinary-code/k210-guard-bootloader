@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+
+import sys
+from mmap import ACCESS_READ, mmap
+from crccheck.crc import CrcArc
+
+if len(sys.argv) == 1:
+    print(sys.argv[0] + " <file list>")
+    sys.exit()
+
+for infile in sys.argv[1:]:
+    try:
+        with open(infile, 'rb') as fh, mmap(fh.fileno(), 0, access=ACCESS_READ) as mm:
+            crc = CrcArc.calc((b[0] for b in mm))
+            print("%04X\t%s" % (crc, infile))
+    except IOError:
+        sys.stderr.write("File IO Error: " + infile + "\n")
+
+sys.exit()
+

@@ -1,0 +1,45 @@
+#!/usr/bin/env python2
+Wlen = 8
+ECC  = False
+import sys, struct
+
+"""
+@brief      Get ECC checksum
+@param      word  The 64 bit data
+@return     72 bit data with 8 bit ECC
+"""
+def ecc(word):
+    # ecc_table and ecc's initial value are generated for DW_ecc (width=64, chkbits=8)
+    ecc_table = [ \
+        0xCE, 0xCB, 0xD3, 0xD5, 0xD6, 0xD9, 0xDA, 0xDC, \
+        0x23, 0x25, 0x26, 0x29, 0x2A, 0x2C, 0x31, 0x34, \
+        0x0E, 0x0B, 0x13, 0x15, 0x16, 0x19, 0x1A, 0x1C, \
+        0xE3, 0xE5, 0xE6, 0xE9, 0xEA, 0xEC, 0xF1, 0xF4, \
+        0x4F, 0x4A, 0x52, 0x54, 0x57, 0x58, 0x5B, 0x5D, \
+        0xA2, 0xA4, 0xA7, 0xA8, 0xAB, 0xAD, 0xB0, 0xB5, \
+        0x8F, 0x8A, 0x92, 0x94, 0x97, 0x98, 0x9B, 0x9D, \
+        0x62, 0x64, 0x67, 0x68, 0x6B, 0x6D, 0x70, 0x75  \
+    ]
+    ecc = 0x0C
+    for i in range(64):
+        if word & (1 << i) != 0:
+            ecc = ecc ^ ecc_table[i]
+    return ecc
+
+if len(sys.argv) > 1:
+    if '--ecc' in sys.argv[1:]:
+        ECC = True
+data = sys.stdin.read()
+while len(data) % Wlen != 0:
+    data += '\x00'
+addr = 0
+print '@%08x' % (addr/Wlen)
+while len(data) != 0:
+    cell = struct.unpack('<Q', data[:Wlen])[0]
+    if ECC:
+        print '%016x%02x' % (cell, ecc(cell))
+    else:
+        print '%016x' % cell
+    addr += Wlen
+    data = data[Wlen:]
+sys.exit(0)
